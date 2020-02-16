@@ -25,6 +25,9 @@ const spotifyApi = new SpotifyWebApi({
 });
 
 
+const SelectedFeatures = [];
+
+
 // Setting credentials can be done in the wrapper's constructor, or using the API object's setters.
 // Create the authorization URL
 var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
@@ -87,10 +90,16 @@ app.get("/getTracks/:id", async (req, res) => {
     tracks.forEach(t => {
       trackIds.push(t.track.id);
     })
+    console.log("trackIds");
     console.log(trackIds);
     const audioResponse = await spotifyApi.getAudioFeaturesForTracks(trackIds);
-    const Features = audioResponse.body;
-    console.log(Features);
+    const Features = audioResponse.body.audio_features;
+    console.log("Feature Vector");
+
+    Features.forEach(track => {
+      SelectedFeatures.push(Object.values(track).slice(0, 11));
+    });
+    console.log(SelectedFeatures);
   } catch (err) {
     console.log(err);
   }
