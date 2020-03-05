@@ -72,7 +72,7 @@ app.get("/spotifyCallback", (req, res) => {
 app.get("/getPlaylist", async (req, res) => {
   console.log('PLAYLIST ROUTE')
   try {
-    const userId = 'thelinmichael'
+    const userId = req.query.userId || 'thelinmichael'
     const response = await spotifyApi.getUserPlaylists(userId)
     const playlist = response.body.items[0];
     res.redirect(`http://localhost:3000/getTracks/${playlist.id}`);
@@ -105,6 +105,22 @@ app.get("/getTracks/:id", async (req, res) => {
   }
 });
 
+
+
+app.use((req, res, next) => {
+  const error = new Error(`${req.originalUrl}-Route not found`);
+  res.statusCode(404);
+  next(error);
+});
+
+
+app.use((error, req, res, next) => {
+  const statusCode = res.statusCode == 200 ? 500 : res.statusCode;
+  res.status(statusCode);
+  res.json({
+    error: error.message
+  })
+});
 app.listen(port, () => {
   console.log(`Server started at ${port}`);
 });
