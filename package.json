@@ -10,8 +10,10 @@
   "author": "gokuljkurup",
   "license": "ISC",
   "dependencies": {
+    "brain.js": "^2.0.0-alpha.12",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "mongoose": "^5.9.3",
     "node-fetch": "^2.6.0",
     "spotify-web-api-node": "^4.0.0"
   }
