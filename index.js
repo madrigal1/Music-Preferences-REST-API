@@ -7,6 +7,7 @@ const Features = require("./models/Features");
 const { shuffle } = require("./ml/shuffle");
 const { getAccuracy } = require("./ml/getAccuracy");
 const brain = require("brain.js");
+const fetch = require("node-fetch");
 
 
 
@@ -166,9 +167,10 @@ function fixLengths(data) {
 
   return data;
 }
-app.use('/nnModel', async (req, res) => {
+app.post('/nnModel', async (req, res) => {
   console.log("nmodel ROUTE");
   const uid = req.query.userId || 'matt';
+  const inputTrack = req.body.input;
   try {
     const samples = await Features.find({ userId: uid });
     if (samples.length === 0) return res.status(500).send('No dataset available for this user');
@@ -195,8 +197,13 @@ app.use('/nnModel', async (req, res) => {
       logPeriod: 100,
       iterations: 1e6,
     });
-    console.log(net.run(testData[1].input));
+    //console.log(net.run(testData[1].input));
     console.log(getAccuracy(net, testData));
+    if (!inputTrack) return res.status(500).json({ err: "No input for nnmodel" });
+    const result = net.run(inputTrack);
+    // console.log(result);
+    //console.log(inputTrack);  
+    return res.status(200).send(Math.max(result[0], result[1]).toString());
 
     /*  const net = new brain.NeuralNetwork({
        activation: 'sigmoid', // activation function
@@ -211,6 +218,63 @@ app.use('/nnModel', async (req, res) => {
   } catch (err) {
     console.log(err);
   }
+  return true;
+});
+
+
+const getData = async (url, settings) => {
+  try {
+    const response = await fetch(url, settings);
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
+
+app.post('/match', async (req, res) => {
+  let user = req.query.user;
+  let friend = req.query.friend;
+  let dataset, result;
+  try {
+    result = await Features.findOne({ userId: friend });
+    dataset = result.data;
+    console.log(result);
+  } catch (err) {
+    console.log(err);
+  }
+  let mean = 0;
+  try {
+    Promise
+      .all(dataset.map(data => {
+        console.log(data);
+        const url = `http://localhost:3000/nnModel?userId=${user}`;
+        let content = {
+          input: data
+        }
+        const settings = {
+          method: "POST",
+          body: JSON.stringify(content),
+          headers: { 'Content-Type': 'application/json' },
+
+        };
+        return getData(url, settings);
+      }))
+      .then((resolvedValues) => {
+        let mean = 0;
+        resolvedValues.forEach((value) => {
+          mean += Number(value);
+        });
+        mean /= resolvedValues.length;
+        res.status(200).send(mean.toString());
+      })
+
+  } catch (err) {
+    console.log(err);
+  }
+  return true;
 });
 
 
