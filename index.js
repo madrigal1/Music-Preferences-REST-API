@@ -277,6 +277,28 @@ app.post('/match', async (req, res) => {
   return true;
 });
 
+app.post("/analyse", async (req, res) => {
+  const main = req.query.user;
+  try {
+    const allUsers = await Features.find({
+      userId: {
+        $ne: main
+      }
+    }, { data: 0 });
+    Promise
+      .all(allUsers.map(async user => {
+        const url = `http://localhost:3000/match?user=${main}&friend=${user.userId}`;
+        return getData(url, { method: 'POST' });
+      })).then((resolvedValues) => {
+        resolvedValues.forEach((ele) => {
+          console.log(ele);
+        })
+      });
+  } catch (err) {
+    console.log(err);
+  }
+})
+
 
 
 app.use((req, res, next) => {
